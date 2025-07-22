@@ -9,13 +9,10 @@ from typing import Annotated
 import jwt
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
-
-
 SessionDep = Annotated[Session, Depends(get_session)]
 
 
-def get_current_user(session: SessionDep, token: str = Depends(oauth2_scheme)) -> User:
+def get_current_user(session: SessionDep, token: str = Depends(OAuth2PasswordBearer(tokenUrl="/api/auth/token"))) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",

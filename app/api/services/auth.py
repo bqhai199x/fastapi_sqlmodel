@@ -1,5 +1,3 @@
-
-
 from sqlmodel import Session, select
 from app.core.security import verify_password
 from app.models.user import User
