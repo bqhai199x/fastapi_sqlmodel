@@ -10,20 +10,5 @@
       "src": "app/(.*)",
       "dest": "app/main.py"
     }
-  ],
-  "excludeFiles": [
-    "**/*.pyc",
-    "**/__pycache__/**",
-    ".env",
-    ".git/**",
-    ".venv/**",
-    "automations/**",
-    "docs/**",
-    "logdir/**",
-    "tests/**",
-    "migrations/**",
-    "Dockerfile",
-    "README.md",
-    "pytest.ini"
   ]
 }
