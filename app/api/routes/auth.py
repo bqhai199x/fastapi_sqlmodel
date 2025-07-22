@@ -1,16 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session, select
-from app.database.db import get_session
-from app.models.user import User
-from app.schemas.user import UserIn, UserOut, Token
-from app.core.security import get_password_hash, create_access_token, authenticate_user, get_current_user
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlmodel import select
+from app.models.user import User, UserIn, UserOut
+from app.models.shared import Token
+from app.core.security import get_password_hash, create_access_token
+from app.api.deps import SessionDep, CurrentUserDep
+from app.api.services import auth as auth_service
 
 
 router = APIRouter()
 
 
-@router.post("/register", response_model=UserOut)
-def register(user: UserIn, session: Session = Depends(get_session)):
+@router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+def register(user: UserIn, session: SessionDep):
     db_user = session.exec(select(User).where(User.username == user.username)).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
@@ -23,7 +25,8 @@ def register(user: UserIn, session: Session = Depends(get_session)):
 
 
 @router.post("/token", response_model=Token)
-def login(user: User | None = Depends(authenticate_user)):
+def login(session: SessionDep, login_data: OAuth2PasswordRequestForm = Depends()):
+    user = auth_service.authenticate_user(session, login_data.username, login_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -35,5 +38,5 @@ def login(user: User | None = Depends(authenticate_user)):
 
 
 @router.get("/me", response_model=UserOut)
-def get_current_user_info(current_user: User = Depends(get_current_user)):
+def get_current_user_info(current_user: CurrentUserDep):
     return current_user

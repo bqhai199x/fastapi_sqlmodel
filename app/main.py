@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from app.middlewares.exception import ExceptionMiddleware
 from app.core.logging import setup_logging
-from app.api.auth import router as auth_router
+from app.api.main import api_router
+
 
 app = FastAPI(title="FastAPI Project")
 
@@ -14,7 +15,7 @@ app.add_middleware(ExceptionMiddleware)
 
 
 # Include routers
-app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
+app.include_router(api_router, prefix="/api")
 
 
 @app.get("/")

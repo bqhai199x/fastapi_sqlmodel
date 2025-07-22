@@ -8,8 +8,7 @@
 6. Configure `.env` with your DATABASE_URL and SECRET_KEY
 7. Run migrations: 
    ```bash
-   alembic init migrations
-   alembic revision --autogenerate -m "Initial migration"
+   alembic revision --autogenerate -m "int"
    alembic upgrade head
    ```
 8. Run: `uvicorn app.main:app --reload`
