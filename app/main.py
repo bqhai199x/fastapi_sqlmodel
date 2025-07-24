@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from app.middlewares.exception import ExceptionMiddleware
-from app.core.logging import setup_logging
 from app.api.main import api_router
 
 
