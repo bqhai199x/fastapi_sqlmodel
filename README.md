@@ -11,4 +11,5 @@
    alembic revision --autogenerate -m "int"
    alembic upgrade head
    ```
-8. Run: `uvicorn app.main:app --reload`
+8. Run `python -m app.core.db`
+9. Run: `uvicorn app.main:app --reload` or `fastapi dev app/main.py`
