@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlmodel import select
-from app.models.user import User, UserIn, UserOut, UserChangePassword
+from app.models.user import UserIn, UserOut, UserChangePassword
 from app.models.shared import Token
 from app.core.security import get_password_hash, create_access_token, verify_password
 from app.api.deps import SessionDep, CurrentUserDep
@@ -13,15 +12,10 @@ router = APIRouter()
 
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def register(user: UserIn, session: SessionDep):
-    db_user = session.exec(select(User).where(User.username == user.username)).first()
-    if db_user:
+    user = auth_service.register_user(session, user)
+    if not user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already registered")
-    hashed_password = get_password_hash(user.password)
-    db_user = User(username=user.username, hashed_password=hashed_password)
-    session.add(db_user)
-    session.commit()
-    session.refresh(db_user)
-    return db_user
+    return user
 
 
 @router.post("/token", response_model=Token)

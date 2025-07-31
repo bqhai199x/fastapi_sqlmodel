@@ -15,15 +15,19 @@ def get_session():
 
 
 def init_db():
-    SQLModel.metadata.create_all(engine)
-    with next(get_session()) as session:
-        if not session.exec(select(func.count(User.id))).one():
-            print("Initializing database...")
-            session.add_all([
-                UserRole(id=ROLE_ID.ADMIN, permissions=[], is_superuser=True),
-                UserRole(id=ROLE_ID.NORMAL_USER, permissions=[], is_superuser=False)
-            ])
-            session.add(User(id=1, username='admin', hashed_password=get_password_hash('admin123'), role_id=ROLE_ID.ADMIN))
-            session.exec(text("SELECT setval('user_id_seq', (SELECT MAX(id) FROM \"user\"))"))
-            session.exec(text("SELECT setval('user_role_id_seq', (SELECT MAX(id) FROM \"user_role\"))"))
-            session.commit()
+    try:
+        SQLModel.metadata.create_all(engine)
+        with next(get_session()) as session:
+            if not session.exec(select(func.count(User.id))).one():
+                print("Initializing database...")
+                session.add_all([
+                    UserRole(id=ROLE_ID.ADMIN, permissions=[], is_superuser=True),
+                    UserRole(id=ROLE_ID.NORMAL_USER, permissions=[], is_superuser=False)
+                ])
+                session.add(User(id=1, username='admin', hashed_password=get_password_hash('admin123'), role_id=ROLE_ID.ADMIN))
+                session.flush()
+                session.exec(text("SELECT setval('user_id_seq', (SELECT MAX(id) FROM \"user\"))"))
+                session.exec(text("SELECT setval('user_role_id_seq', (SELECT MAX(id) FROM \"user_role\"))"))
+                session.commit()
+    except Exception as e:
+        print("Database initialization failed", f"Error: {e}", sep="\n")

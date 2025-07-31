@@ -15,8 +15,7 @@ SessionDep = Annotated[Session, Depends(get_session)]
 def get_current_user(session: SessionDep, token: str = Depends(OAuth2PasswordBearer(tokenUrl="/api/auth/token"))) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
+        detail="Not authenticated"
     )
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
@@ -25,8 +24,8 @@ def get_current_user(session: SessionDep, token: str = Depends(OAuth2PasswordBea
             raise credentials_exception
     except InvalidTokenError:
         raise credentials_exception
-    user = session.exec(select(User).where(User.username == username)).one()
-    if user is None:
+    user = session.exec(select(User).where(User.username == username, User.is_active)).one_or_none()
+    if not user:
         raise credentials_exception
     return user
 
@@ -42,7 +41,7 @@ class RequirePermissions:
         if (not current_user.role.is_superuser and not set(self.permissions).issubset(set(current_user.role.permissions))):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have enough permissions to perform this action",
+                detail="Permission denied",
             )
 
 
@@ -55,7 +54,7 @@ class RequireAdmin:
         if not current_user.role.is_superuser:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have admin permissions to perform this action",
+                detail="Permission denied",
             )
 
 
@@ -68,8 +67,7 @@ class RequireAuthenticated:
         if not current_user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated",
-                headers={"WWW-Authenticate": "Bearer"},
+                detail="Not authenticated"
             )
 
 
