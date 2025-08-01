@@ -1,6 +1,7 @@
 from sqlmodel import Session, select
 from app.models.user import User, AdminUpdateUser
 from fastapi import HTTPException, status
+from app.core import cache
 
 
 def get_users(session: Session) -> list[User]:
@@ -16,4 +17,5 @@ def update_user(session: Session, user_id: int, user_update: AdminUpdateUser) ->
         setattr(db_user, key, value)
     session.commit()
     session.refresh(db_user)
+    cache.remove_token(db_user.username)
     return db_user

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from app.models.user import UserIn, UserOut, UserChangePassword
 from app.models.shared import Token
-from app.api.deps import SessionDep, CurrentUserDep, TokenDep
+from app.api.deps import SessionDep, CurrentUserDep
 from app.api.services import auth as auth_service
 
 

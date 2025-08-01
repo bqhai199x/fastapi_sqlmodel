@@ -27,7 +27,6 @@ def authenticate_user(session: Session, user_name: str, password: str) -> Token:
     token_payload = TokenPayload(sub=user.username, permissions=user.permissions, is_superuser=user.is_superuser)
     access_token = create_token(token_payload)
     refresh_token = create_token(token_payload, refresh=True)
-
     return Token(access_token=access_token, refresh_token=refresh_token)
 
 
