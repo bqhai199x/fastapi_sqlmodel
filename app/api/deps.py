@@ -3,28 +3,22 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import Session, select
 from app.core.db import get_session
 from app.models.user import User
-from jwt.exceptions import InvalidTokenError
-from app.core.config import settings
 from typing import Annotated
-import jwt
+from app.core.security import decode_token
+from app.helpers.custom_exception import credentials_exception, permissions_exception
+
+
+TokenDep = Annotated[str, Depends(OAuth2PasswordBearer(tokenUrl="/api/auth/token"))]
 
 
 SessionDep = Annotated[Session, Depends(get_session)]
 
 
-def get_current_user(session: SessionDep, token: str = Depends(OAuth2PasswordBearer(tokenUrl="/api/auth/token"))) -> User:
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Not authenticated"
-    )
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-    except InvalidTokenError:
+def get_current_user(session: SessionDep, token: TokenDep) -> User:
+    payload = decode_token(token)
+    if not payload.sub:
         raise credentials_exception
-    user = session.exec(select(User).where(User.username == username, User.is_active)).one_or_none()
+    user = session.exec(select(User).where(User.username == payload.sub, User.is_active)).one_or_none()
     if not user:
         raise credentials_exception
     return user
@@ -34,28 +28,24 @@ CurrentUserDep = Annotated[User, Depends(get_current_user)]
 
 
 class RequirePermissions:
-    def __init__(self, permissions: set[str]):
+    def __init__(self, permissions: set[int]):
         self.permissions = permissions
 
-    def __call__(self, current_user: CurrentUserDep):
-        if (not current_user.role.is_superuser and not set(self.permissions).issubset(set(current_user.role.permissions))):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Permission denied",
-            )
+    def __call__(self, token: TokenDep):
+        payload = decode_token(token)
+        if (not payload.is_superuser and not self.permissions.issubset(payload.permissions)):
+            raise permissions_exception
 
 
-def require_permissions(permissions: set[str]):
+def require_permissions(permissions: set[int]):
     return Depends(RequirePermissions(permissions))
 
 
 class RequireAdmin:
-    def __call__(self, current_user: CurrentUserDep):
-        if not current_user.role.is_superuser:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Permission denied",
-            )
+    def __call__(self, token: TokenDep):
+        payload = decode_token(token)
+        if not payload.is_superuser:
+            raise permissions_exception
 
 
 def require_admin():
@@ -63,8 +53,9 @@ def require_admin():
 
 
 class RequireAuthenticated:
-    def __call__(self, current_user: CurrentUserDep):
-        if not current_user:
+    def __call__(self, token: TokenDep):
+        payload = decode_token(token)
+        if not payload.sub:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Not authenticated"
