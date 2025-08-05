@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import Session, select
 from app.core.db import get_session
@@ -33,7 +33,7 @@ class RequirePermissions:
 
     def __call__(self, token: TokenDep):
         payload = decode_token(token)
-        if (not payload.is_superuser and not self.permissions.issubset(payload.permissions)):
+        if not payload.is_superuser and not self.permissions.issubset(payload.permissions):
             raise permissions_exception
 
 
@@ -56,10 +56,7 @@ class RequireAuthenticated:
     def __call__(self, token: TokenDep):
         payload = decode_token(token)
         if not payload.sub:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated"
-            )
+            raise credentials_exception
 
 
 def require_authenticated():

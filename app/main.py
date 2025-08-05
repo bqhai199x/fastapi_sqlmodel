@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from app.middlewares.exception_handler import validation_exception_handler
 from app.api.main import api_router
 from app.core.db import init_db
@@ -25,5 +25,5 @@ app.include_router(api_router, prefix="/api")
 
 
 @app.get("/")
-async def root():
-    return {"message": "Welcome to FastAPI Project"}
+async def root(request: Request):
+    return {"messsage": f"Wellcome {request.client.host}"}
