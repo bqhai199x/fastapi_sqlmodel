@@ -17,5 +17,5 @@ def update_user(session: Session, user_id: int, user_update: AdminUpdateUser) ->
         setattr(db_user, key, value)
     session.commit()
     session.refresh(db_user)
-    cache.remove_token(db_user.username)
+    cache.remove_user_access_tokens(db_user.username)
     return db_user

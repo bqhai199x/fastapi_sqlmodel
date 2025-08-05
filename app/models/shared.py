@@ -10,3 +10,4 @@ class TokenPayload(SQLModel):
     sub: str
     permissions: set[int]
     is_superuser: bool
+    session_id: str

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from app.models.user import UserIn, UserOut, UserChangePassword
 from app.models.shared import Token
-from app.api.deps import SessionDep, CurrentUserDep
+from app.api.deps import SessionDep, CurrentUserDep, TokenDep
 from app.api.services import auth as auth_service
 
 
@@ -32,3 +32,8 @@ def change_password(user_update: UserChangePassword, current_user: CurrentUserDe
 @router.get("/refresh", response_model=Token)
 def refresh_access_token(token: str, session: SessionDep):
     return auth_service.refresh_access_token(session, token)
+
+
+@router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
+def logout(token: TokenDep):
+    auth_service.logout_user(token)

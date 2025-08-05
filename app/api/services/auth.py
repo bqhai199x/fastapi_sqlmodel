@@ -3,6 +3,8 @@ from app.core.security import verify_password, get_password_hash, create_token, 
 from app.models.user import User, UserIn, UserChangePassword
 from fastapi import HTTPException, status
 from app.models.shared import Token, TokenPayload
+from app.core import cache
+import uuid
 
 
 def register_user(session: Session, user: UserIn) -> User:
@@ -24,7 +26,7 @@ def authenticate_user(session: Session, user_name: str, password: str) -> Token:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password"
         )
-    token_payload = TokenPayload(sub=user.username, permissions=user.permissions, is_superuser=user.is_superuser)
+    token_payload = TokenPayload(sub=user.username, permissions=user.permissions, is_superuser=user.is_superuser, session_id=str(uuid.uuid4()))
     access_token = create_token(token_payload)
     refresh_token = create_token(token_payload, refresh=True)
     return Token(access_token=access_token, refresh_token=refresh_token)
@@ -46,5 +48,11 @@ def refresh_access_token(session: Session, token: str) -> Token:
     user = session.exec(select(User).where(User.username == payload.sub)).one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
-    new_access_token = create_token(TokenPayload(sub=user.username, permissions=user.permissions, is_superuser=user.is_superuser))
+    new_access_token = create_token(TokenPayload(sub=user.username, permissions=user.permissions, is_superuser=user.is_superuser, session_id=payload.session_id))
     return Token(access_token=new_access_token, refresh_token=token)
+
+
+def logout_user(token: str) -> None:
+    payload = decode_token(token)
+    if payload.session_id:
+        cache.remove_device_tokens(payload.sub, payload.session_id)
